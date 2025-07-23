@@ -1,0 +1,72 @@
+-- Company table
+CREATE TABLE companies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Warehouse table
+CREATE TABLE warehouses (
+    id SERIAL PRIMARY KEY,
+    company_id INT NOT NULL,
+    name VARCHAR(255),
+    location TEXT,
+    FOREIGN KEY (company_id) REFERENCES companies(id)
+);
+
+-- Product table
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    sku VARCHAR(100) NOT NULL UNIQUE,
+    price DECIMAL(10, 2),
+    is_bundle BOOLEAN DEFAULT FALSE
+);
+
+-- Inventory table (many-to-many between products and warehouses)
+CREATE TABLE inventories (
+    id SERIAL PRIMARY KEY,
+    product_id INT NOT NULL,
+    warehouse_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
+    UNIQUE(product_id, warehouse_id)
+);
+
+-- Inventory history table
+CREATE TABLE inventory_changes (
+    id SERIAL PRIMARY KEY,
+    inventory_id INT NOT NULL,
+    change_type VARCHAR(50) CHECK (change_type IN ('add', 'remove', 'adjust')),
+    change_quantity INT NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    note TEXT,
+    FOREIGN KEY (inventory_id) REFERENCES inventories(id)
+);
+
+-- Suppliers table
+CREATE TABLE suppliers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    contact_info TEXT
+);
+
+-- Products supplied by suppliers
+CREATE TABLE supplier_products (
+    supplier_id INT,
+    product_id INT,
+    PRIMARY KEY (supplier_id, product_id),
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Product bundles (self-referencing many-to-many)
+CREATE TABLE product_bundles (
+    bundle_id INT,
+    item_product_id INT,
+    quantity INT DEFAULT 1,
+    PRIMARY KEY (bundle_id, item_product_id),
+    FOREIGN KEY (bundle_id) REFERENCES products(id),
+    FOREIGN KEY (item_product_id) REFERENCES products(id),
+    CHECK (bundle_id != item_product_id)
+);
